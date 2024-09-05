@@ -1,0 +1,12 @@
+graph TD
+    A[Start] --> B[Fetch Sitemap Index]
+    B --> C{Monthly Sitemaps Found?}
+    C -->|Yes| D[Fetch Article URLs]
+    C -->|No| E[End]
+    D --> F[Scrape Article Content & Metadata]
+    F --> G{Valid Article?}
+    G -->|Yes| H[Save Article Data]
+    G -->|No| D
+    H --> I{Max Articles Scraped?}
+    I -->|Yes| E
+    I -->|No| D
