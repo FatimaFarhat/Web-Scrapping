@@ -31,6 +31,7 @@ class Article:
     word_count: Optional[str]
     lang: Optional[str]
     description: Optional[str]
+    classes: Optional[List[str]]
 
 
 # The SitemapParser class is designed to handle the parsing of sitemaps,
@@ -200,6 +201,7 @@ class ArticleScraper:
                             word_count=metadata.get('word_count'),
                             lang=metadata.get('lang'),
                             description=metadata.get('description'),
+                            classes = metadata.get('classes', []),
                         )
                         print(f"Scraped article {article_url}: {article}")
                         return article
@@ -226,7 +228,7 @@ class FileUtility:
     def save_articles_to_json(year, month, articles, compressed=False):
         # Handle special cases for filenames
         if year == "all_years" and month == "all_months":
-            filename = 'all_articles_originaltemp.json.gz' if compressed else 'all_articles_originaltemp.json'
+            filename = 'all_articles_original_20K.json.gz' if compressed else 'all_articles_original_20K.json'
         else:
             # Convert month to an integer for proper formatting
             try:
@@ -264,7 +266,7 @@ def main():
     all_articles_original = []
 
     scraped_count = 0
-    max_articles = 5 # Maximum number of articles to scrape
+    max_articles = 20000  # Maximum number of articles to scrape
 
     for monthly_url in monthly_sitemap_urls:
         try:
