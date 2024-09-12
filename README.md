@@ -1,153 +1,313 @@
-# Web-Scrapping
-Parse a Sitemap, Scrape Articles, Store Data
+# Article Management API
 
-## Overview
+## Project Overview
 
 This project is a Python-based web scraper designed to extract articles from almayadeen website's sitemap, parse their metadata, and store them in a structured JSON format. The scraper handles multiple tasks, including fetching sitemap URLs, extracting article URLs, and scraping full article content and metadata. It also includes functionality to save the data in compressed `.json.gz` format for efficient storage.
+and provides an API for managing and querying articles stored in a MongoDB collection. The API is built with Flask and allows users to filter, count, and analyze articles based on various criteria such as publication dates, word counts, video durations, keywords, and more.
 
-## Features
+## Table of Contents
 
-- **Sitemap Parsing**: Retrieves a list of monthly sitemaps from the website's sitemap index.
-- **Article Scraping**: Extracts metadata and full article text from each article URL found in the sitemap.
-- **Handles Arabic Content**: Fixes paragraph order for articles in Arabic by reversing the paragraph sequence.
-- **Data Saving**: Saves scraped data in JSON format, with optional gzip compression.
-- **Error Handling**: Manages various HTTP and parsing errors gracefully, ensuring robustness.
+1. [Project Overview](#project-overview)
+2. [Setup Instructions](#setup-instructions)
+3. [Dependencies](#dependencies)
+4. [Usage Instructions](#usage-instructions)
+5. [Web Scraping](#web-scraping)
+6. [API Endpoints](#api-endpoints)
+7. [Data Storage](#data-storage)
+8. [Scripts Overview](#scripts-overview)
 
-## Architecture
+## Setup Instructions
 
-The project consists of the following key components:
+To set up this project locally, follow these steps:
 
-1. **\`SitemapParser\`**: 
-   - Parses the sitemap index to get URLs of monthly sitemaps.
-   - Extracts article URLs from each monthly sitemap.
+1. **Clone the repository:**
 
-2. **\`ArticleScraper\`**: 
-   - Fetches the article content and metadata.
-   - Removes unwanted HTML elements and extracts the article's full text.
-   - Fixes Arabic language article ordering issues.
+    ```bash
+    git clone <repository-url>
+    cd <repository-directory>
+    ```
 
-3. **\`FileUtility\`**: 
-   - Saves the scraped articles in JSON format, optionally compressed.
-   
-4. **\`Article\`**: 
-   - A data class that encapsulates article metadata and content for easy storage and access.
+2. **Create and activate a virtual environment:**
 
-## Installation
+    ```bash
+    python3 -m venv venv
+    source venv/bin/activate
+    ```
 
-1. Clone the repository:
-    \`\`\`bash
-    git clone https://github.com/FatimaFarhat/Web-Scrapping.git
-    \`\`\`
-2. Navigate to the project directory:
-    \`\`\`bash
-    cd sitemap-article-scraper
-    \`\`\`
-3. Install the dependencies:
-    \`\`\`bash
+3. **Install the dependencies:**
+
+    ```bash
     pip install -r requirements.txt
-    \`\`\`
+    ```
 
-## Usage
+4. **Run the Flask app:**
 
-To run the scraper, execute the \`main()\` function in the script. This will fetch sitemaps, scrape articles, and save them to a JSON file.
+    ```bash
+    flask run
+    ```
 
-\`\`\`bash
-python scraper.py
-\`\`\`
+## Dependencies
 
-You can adjust the maximum number of articles to scrape by changing the \`max_articles\` parameter in the \`main()\` function.
+- Python 3.7+
+- Flask
+- PyMongo
+- MongoDB
+- Other dependencies specified in the `requirements.txt` file
 
-\`\`\`python
-max_articles = 5  # Adjust this value to scrape more or fewer articles
-\`\`\`
+## Usage Instructions
 
-### Customizing Output
+To use the API, follow the setup instructions to get the project running locally. You can interact with the API using tools like Postman, Curl, or directly from your web browser.
 
-- **Save All Articles**: The scraper will save all scraped articles to a \`json.gz\` file if you scrape across multiple months.
-- **Saving by Month**: The \`FileUtility\` class can save articles monthly, storing them in compressed \`.json.gz\` files for easy retrieval.
+## Web Scraping
 
-## File Structure
+This section explains how articles are scraped and stored.
 
-\`\`\`
-.
-├── scraper.py            # Main scraper script
-├── README.md             # Project documentation
-├── requirements.txt      # List of dependencies
-└── data/                 # Directory where scraped articles are saved
-\`\`\`
+1. **Scraping Setup**: Articles are scraped using Python scripts with libraries such as BeautifulSoup for HTML parsing and Requests for making HTTP calls.
+2. **Processing**: Scraped articles are processed to remove unwanted HTML tags and formatted before being stored in MongoDB.
+3. **Storing Data**: The scraper will save all scraped articles to a \`json.gz\` file if you scrape across multiple months.then will be stored in  MongoDB, and the script ensures that only relevant fields are kept for querying and analysis.
+4. **Architecture**:The web-scraper pythom script consists of the following key components:
+ 
+   The project consists of the following key components:
 
-## Workflow Diagram
+   1. **\`SitemapParser\`**: 
+      - Parses the sitemap index to get URLs of monthly sitemaps.
+      - Extracts article URLs from each monthly sitemap.
 
-\`\`\`mermaid
-graph TD
-    A[Start] --> B[Fetch Sitemap Index]
-    B --> C{Monthly Sitemaps Found?}
-    C -->|Yes| D[Fetch Article URLs]
-    C -->|No| E[End]
-    D --> F[Scrape Article Content & Metadata]
-    F --> G{Valid Article?}
-    G -->|Yes| H[Save Article Data]
-    G -->|No| D
-    H --> I{Max Articles Scraped?}
-    I -->|Yes| E
-    I -->|No| D
-\`\`\`
+   2. **\`ArticleScraper\`**: 
+      - Fetches the article content and metadata.
+      - Removes unwanted HTML elements and extracts the article's full text.
+      - Fixes Arabic language article ordering issues.
 
-### Sitemap Fetching
+   3. **\`FileUtility\`**: 
+      - Saves the scraped articles in JSON format, optionally compressed.
+   
+   4. **\`Article\`**: 
+      - A data class that encapsulates article metadata and content for easy storage and access.
 
-- The **SitemapParser** fetches the sitemap index and extracts individual monthly sitemap URLs.
-- For each monthly sitemap, it retrieves all article URLs listed.
 
-### Article Scraping
+## API Endpoints
 
-- The **ArticleScraper** fetches the article page and extracts metadata from the embedded JSON inside \`<script>\` tags.
-- The full article text is extracted from \`<p>\` tags, with specific handling for Arabic articles to reverse paragraph order.
+1. **GET /articles_with_video**  
+   Description: Retrieves a list of articles that contain a video.  
+   Returns: A JSON array of articles with their titles, video durations, and Object IDs.
 
-### Data Saving
+2. **GET /articles_by_year/<int:year>**  
+   Description: Retrieves the number of articles published in a specified year.  
+   Parameters: `year` (The year to filter the articles by).  
+   Returns: A JSON object with the count of articles published in the specified year.
 
-- The scraped articles are saved incrementally in compressed \`.json.gz\` format, organized by month and year, or saved all together.
+3. **GET /longest_articles**  
+   Description: Retrieves the top 10 articles with the highest word count.  
+   Returns: A JSON array of articles with their titles and word counts.
 
-## JSON Data Format
+4. **GET /shortest_articles**  
+   Description: Retrieves the top 10 articles with the lowest word count.  
+   Returns: A JSON array of articles with their titles and word counts.
 
-Each article is stored in JSON format with the following structure:
+5. **GET /articles_by_keyword_count**  
+   Description: Retrieves the number of articles grouped by the number of keywords they contain.  
+   Returns: A JSON array where each entry includes the number of keywords and the count of articles with that many keywords.
 
-\`\`\`json
-{
-  "url": "https://example.com/article",
-  "post_id": "123456",
-  "title": "Sample Article",
-  "keywords": ["example", "sample"],
-  "thumbnail": "https://example.com/image.jpg",
-  "publication_date": "2024-09-05",
-  "last_updated_date": "2024-09-05",
-  "author": "John Doe",
-  "full_article_text": "This is the article content...",
-  "video_duration": "3:45",
-  "word_count": "500",
-  "lang": "en",
-  "description": "A brief description of the article"
-}
-\`\`\`
+6. **GET /articles_with_thumbnail**  
+   Description: Retrieves a list of articles that have a thumbnail image.  
+   Returns: A JSON array of article titles.
 
-## Error Handling
+7. **GET /articles_updated_after_publication**  
+   Description: Retrieves a list of articles where the `last_updated_date` is after the `publication_date`.  
+   Returns: A JSON array of articles with their titles.
 
-- **HTTP Errors**: If the sitemap or an article URL fails to load, the error is logged, and the scraper continues with the next URL.
-- **Metadata Parsing Errors**: If JSON metadata parsing fails, the article will be skipped, and the error will be logged.
+8. **GET /articles_by_coverage/<coverage>**  
+   Description: Retrieves a list of articles under a specific coverage category.  
+   Parameters: `coverage` (The specific coverage value to filter by).  
+   Returns: A JSON array of article titles.
 
-## Future Improvements
+9. **GET /popular_keywords_last_X_days/<int:days>**  
+   Description: Retrieves the most popular keywords from articles published within the last X days.  
+   Parameters: `days` (The number of days to look back).  
+   Returns: A JSON array of popular keywords and their counts.
 
-- **Multithreading**: Parallel scraping for faster article retrieval.
-- **Advanced Logging**: Implement logging with different verbosity levels for debugging and monitoring.
-- **More Languages**: Add support for other languages that may have different scraping needs.
+10. **GET /articles_by_month/<int:year>/<int:month>**  
+    Description: Retrieves the number of articles published in a specific month of a given year.  
+    Parameters: `year` (The year to filter by), `month` (The month to filter by).  
+    Returns: A JSON object with the count of articles for the given month and year.
 
----
+11. **GET /articles_by_word_count_range/<int:min_word_count>/<int:max_word_count>**  
+    Description: Retrieves the count of articles within a specified word count range.  
+    Parameters: `min_word_count` (Minimum word count), `max_word_count` (Maximum word count).  
+    Returns: A JSON object with the count of articles that fall within the given word count range.
 
-### License
+12. **GET /articles_with_specific_keyword_count/<int:count>**  
+    Description: Retrieves articles that contain exactly the specified number of keywords.  
+    Parameters: `count` (The number of keywords to filter by).  
+    Returns: A JSON object with the count of articles that have the specified keyword count.
 
-This project is licensed under the MIT License
+13. **GET /articles_by_specific_date/<date>**  
+    Description: Retrieves articles published on a specific date (YYYY-MM-DD format).  
+    Returns: A JSON object with the date, article count, and a list of articles.  
+    Error Responses:  
+      - `400`: Invalid date format.  
+      - `404`: No articles found for the given date.
 
-# Write the content to README.md file
-with open('README.md', 'w', encoding='utf-8') as f:
-    f.write(readme_content)
+14. **GET /articles_containing_text/<text>**  
+    Description: Retrieves articles that contain specific text in their content (case-insensitive).  
+    Returns: A JSON object with the text, article count, and a list of articles.  
+    Error Responses:  
+      - `404`: No articles found containing the specified text.  
+      - `500`: Server error.
 
-print("README.md has been generated.")
+15. **GET /articles_with_more_than/<int:word_count>**
+    - Description: Retrieves articles where the word count exceeds a specified value.
+    - Returns: A JSON object with the word count, article count, and a list of articles.
+    - Error Responses:
+      - `404`: No articles found with more than the specified number of words.
+      - `500`: Server error.
+
+16. **GET /articles_grouped_by_coverage**
+    - Description: Retrieves the count of articles grouped by the "coverage" category derived from the classes field.
+    - Returns: A JSON array with coverage categories and their counts.
+    - Error Responses:
+      - `500`: Server error.
+
+17. **GET /articles_last_X_hours/<int:hours>**
+    - Description: Retrieves articles published in the last X hours.
+    - Returns: A JSON array of articles with their titles and publication dates.
+    - Error Responses:
+      - `404`: No articles found published in the last X hours.
+      - `500`: Server error.
+
+18. **GET /articles_by_title_length**
+    - Description: Retrieves the number of articles grouped by the length of their titles.
+    - Returns: A JSON array with title lengths and their counts.
+    - Error Responses:
+      - `500`: Server error.
+
+19. **GET /most_updated_articles**
+    - Description: Retrieves the top 10 articles that have been updated the most times.
+    - Returns: A JSON array of articles with their titles and update counts.
+    - Error Responses:
+      - `500`: Server error.
+     
+20. **GET /popular_keywords_last_X_days/<int:days>**
+    - Description: Retrieves most popular keywords used in articles published in the last X days.
+    - Returns: A JSON object with keywords and their counts.
+    - Error Responses:
+      - `500`: Server error.
+      - Error fetching popular keywords
+21. **GET /articles_by_month/<int:year>/<int:month>**
+    - Description: Retrieves the number of articles publieshed in a specific month and year. Articles are grouped by month and year
+    - Returns: A JSON object with the count of articles.
+    - Error Responses:
+      - `500`: Server error.
+      - Error fetching articles by month
+ 22. **GET /articles_by_word_count_range/<int:min_word_count>/<int:max_word_count>**
+    - Description: Retrieve articles with a word count within a specific range.
+    - Returns: A JSON object with the count of articles for the given word count rang.
+    - Error Responses:
+      - `500`: Server error.
+      - Error fetching articles by word count range
+ 23. **GET /articles_with_specific_keyword_count/<int:count>**
+    - Description: Retrieve articles that contain exatly a specific number of keywords.
+    - Returns: A JSON object with the count of articles for the given keyword count.
+    - Error Responses:
+      - `500`: Server error.
+      - Error fetching articles with specific keyword count.
+
+ 24. **GET /articles_by_specific_date/<date>**
+   - Description: Retrieve articles published on a specific date where the date should be             provided in the format 'YYYY-MM-DD'.
+   - Returns: A JSON object with the count of articles published in that date.
+   - Error Responses:
+      - `500`: Server error.
+      - Error fetching articles with specific keyword count.
+
+   25. **GET /articles_containing_text/<text>**
+      - Description: Retrieve articles that contain a specific text in their content.
+       The text will be searched within the 'full_article_text' field
+      - Returns: A JSON object with the count of articles contain that text.
+      - Error Responses:
+         - `500`: Server error.
+         - Error fetching articles with specific text.
+
+   26. **GET /articles_with_more_than/<int:word_count>**
+      - Description: Retrieve articles with more than a specified number of words.
+      - Returns: A JSON object with the count of articles found.
+      - Error Responses:
+         - `500`: Server error.
+         - Error fetching articles with the more than the specified word count.
+
+   27. **GET /articles_grouped_by_coverage**
+   - Description: Retrieve the number of articles grouped by their coverage category.
+         The 'coverage' category is derived from the 'classes' field of each article.
+   - Returns: A JSON object with each coverage category and the count of articles in that category.
+   - Error Responses:
+     - `500`: Server error.
+      - Error fetching articles grouped by coverage.
+
+   28. **GET /articles_last_X_hours/<int:hours>**
+       - Description: Retrieve a list of articles published in the last X hours.
+      - Returns: A JSON array of articles that were published in the last X hours
+      - Error Responses:
+         - Error fetching articles grouped by coverage.
+        
+   29. **GET /articles_by_title_length**
+       - Description: Retrieve the number of articles grouped by the length of their title.
+      - Returns: A JSON object with the length of title and count of articles having that length.
+      - Error Responses:
+         - Error fetching articles with specific title length.
+        
+   30. **GET /most_updated_articles**
+       - Description: Retrieve the top 10 articles that have been updated the most times..
+      - Returns: A JSON array of articles with their titles and update counts.
+      - Error Responses:
+         - Error fetching most updated articles.
+        
+ 
+    
+
+    
+
+
+
+## Data Storage
+
+### `data_storage.py`
+
+The `data_storage.py` script is responsible for loading article data from a JSON file and inserting it into the MongoDB collection. This script assumes that MongoDB is already running and the collection is correctly initialized.
+
+#### Script Overview
+
+- **Imports**: The script uses `pymongo` for interacting with MongoDB and `json` for reading the JSON data.
+- **Connection**: Connects to MongoDB using the local instance at `localhost:27017`, and selects the `almayadeen` database and `articles` collection.
+- **File Path**: Defines the path to the JSON file that contains the article data.
+- **Data Insertion**: Reads the JSON file and inserts its contents into the MongoDB collection.
+
+#### How to Use
+
+1. **Ensure MongoDB is Running**: Make sure your MongoDB server is up and running.
+2. **Set File Path**: Verify the `file_path` variable in the script points to your JSON file.
+3. **Run the Script**:
+
+    ```bash
+    python data_storage.py
+    ```
+
+   This will load the data from the specified JSON file and insert it into the `articles` collection in MongoDB.
+
+#### Example Script
+
+```python
+import pymongo
+import json
+
+# Connect to MongoDB
+client = pymongo.MongoClient("mongodb://localhost:27017/")
+db = client["almayadeen"]
+collection = db["articles"]
+
+file_path = 'data//all_articles_original_20K.json'
+
+# Load and insert JSON data
+with open(file_path, 'rt', encoding='utf-8') as f:
+    data = json.load(f)
+    collection.insert_many(data)
+
+print("Data inserted successfully!")
