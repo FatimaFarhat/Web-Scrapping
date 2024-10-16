@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles by Word Count Range</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Articles by Word Count Range</h1>
+    <canvas id="wordCountHistogram" width="400" height="200"></canvas>
+
+    <script>
+        async function fetchArticlesByWordCountRange(min, max) {
+            const response = await fetch(`/api/articles_by_word_count_range/${min}/${max}`);
+            return await response.json();
+        }
+
+        async function renderHistogram() {
+            const minWordCount = 0;  // Set your desired minimum word count
+            const maxWordCount = 1000; // Set your desired maximum word count
+            const data = await fetchArticlesByWordCountRange(minWordCount, maxWordCount);
+
+            const counts = [data[`Articles between ${minWordCount} and ${maxWordCount} words`]];
+
+            const ctx = document.getElementById('wordCountHistogram').getContext('2d');
+            const wordCountHistogram = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: [`${minWordCount}-${maxWordCount}`],
+                    datasets: [{
+                        label: 'Number of Articles',
+                        data: counts,
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        renderHistogram();
+    </script>
+</body>
+</html>

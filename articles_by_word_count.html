@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles by Word Count</title>
+
+    <!-- Include amCharts library -->
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+    <!-- Styles for the chart container -->
+    <style>
+        #chartdiv {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Articles by Word Count</h1>
+    <div id="chartdiv"></div> <!-- Chart will be rendered here -->
+
+    <!-- Script to generate and fetch data for the histogram -->
+    <script>
+        am5.ready(function() {
+
+            // Create root element
+            var root = am5.Root.new("chartdiv");
+
+            // Set theme
+            root.setThemes([ am5themes_Animated.new(root) ]);
+
+            // Create chart
+            var chart = root.container.children.push(am5xy.XYChart.new(root, {
+                panX: true,
+                panY: true,
+                wheelX: "panX",
+                wheelY: "zoomX"
+            }));
+
+            // Create axes
+            var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+                categoryField: "word_count",  // Use word_count as categories on X axis
+                renderer: am5xy.AxisRendererX.new(root, {})
+            }));
+
+            var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+                renderer: am5xy.AxisRendererY.new(root, {})
+            }));
+
+            // Create series
+            var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+                xAxis: xAxis,
+                yAxis: yAxis,
+                valueYField: "article_count",  // Use article_count as Y axis values
+                categoryXField: "word_count",  // Use word_count as X axis categories
+                tooltip: am5.Tooltip.new(root, {
+                    labelText: "{valueY}"
+                })
+            }));
+
+            // Fetch data from Flask API
+            fetch('/articles_by_word_count')
+                .then(response => response.json())
+                .then(data => {
+                    // Set data to the series
+                    series.data.setAll(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+
+            // Add appearance animations
+            series.appear(1000);
+            chart.appear(1000, 100);
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles by Keyword</title>
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+    <style>
+        #chartdiv {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="chartdiv"></div>
+
+<script>
+    am5.ready(function() {
+        // Create root element
+        var root = am5.Root.new("chartdiv");
+
+        // Set themes
+        root.setThemes([ am5themes_Animated.new(root) ]);
+
+        // Create chart
+        var chart = root.container.children.push(am5xy.XYChart.new(root, {
+            panX: true,
+            panY: true,
+            wheelX: "panX",
+            wheelY: "zoomX"
+        }));
+
+        // Create axes
+        var xAxis = chart.xAxes.push(am5xy.ValueAxis.new(root, {
+            renderer: am5xy.AxisRendererX.new(root, {})
+        }));
+
+        var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+            renderer: am5xy.AxisRendererY.new(root, {})
+        }));
+
+        // Create series
+        var series = chart.series.push(am5xy.BubbleSeries.new(root, {
+            xAxis: xAxis,
+            yAxis: yAxis,
+            valueXField: "average_word_count",
+            valueYField: "count",
+            tooltip: am5.Tooltip.new(root, {
+                labelText: "{keyword}: {count} articles"
+            })
+        }));
+
+    const keyword = "{{ keyword }}";  // Get the keyword from Flask
+
+    // Fetch data from the Flask API using the dynamic keyword
+    fetch(`/api/articles_by_keyword/${keyword}`)
+        .then(response => response.json())
+        .then(data => {
+            // Process data for your visualization
+            console.log(data);  // Here you would handle the visualization, e.g., amCharts
+        })
+        .catch(error => console.error('Error fetching data:', error));
+
+
+        // Add appearance animations
+        series.appear(1000);
+        chart.appear(1000, 100);
+    });
+</script>
+
+</body>
+</html>

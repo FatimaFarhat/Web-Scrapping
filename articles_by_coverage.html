@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles by Coverage</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Articles by Coverage: {{ coverage }}</h1>
+    <canvas id="coverageChart" width="400" height="200"></canvas>
+
+    <script>
+        fetch(`/api/articles_by_coverage/{{ coverage }}`)
+            .then(response => response.json())
+            .then(data => {
+                const titles = data.map(article => article.title);
+                const counts = {}; // To hold the count of articles for each title
+
+                titles.forEach(title => {
+                    counts[title] = (counts[title] || 0) + 1;
+                });
+
+                // Prepare data for the chart
+                const labels = Object.keys(counts);
+                const values = Object.values(counts);
+
+                const ctx = document.getElementById('coverageChart').getContext('2d');
+                const chart = new Chart(ctx, {
+                    type: 'bar', // or 'horizontalBar' for a horizontal stacked chart
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Article Count',
+                            data: values,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching articles by coverage:', error));
+    </script>
+</body>
+</html>

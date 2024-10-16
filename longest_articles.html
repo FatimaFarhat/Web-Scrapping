@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top 10 Longest Articles by Word Count</title>
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+</head>
+<body>
+    <h1>Top 10 Longest Articles by Word Count</h1>
+    <div id="chartdiv" style="width: 100%; height: 500px;"></div>
+
+    <script>
+        // Fetch the data from the API
+        fetch('/api/longest_articles')
+            .then(response => response.json())
+            .then(data => {
+                am5.ready(function() {
+                    // Create the chart instance
+                    var root = am5.Root.new("chartdiv");
+
+                    // Set themes
+                    root.setThemes([am5themes_Animated.new(root)]);
+
+                    // Create XY chart
+                    var chart = root.container.children.push(am5xy.XYChart.new(root, {
+                        panX: true,
+                        panY: true,
+                        wheelX: "panX",
+                        wheelY: "zoomX",
+                        pinchZoomX: true
+                    }));
+
+                    // Create X-axis (article titles)
+                    var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+                        categoryField: "title",
+                        renderer: am5xy.AxisRendererX.new(root, {})
+                    }));
+
+                    // Create Y-axis (word count)
+                    var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+                        renderer: am5xy.AxisRendererY.new(root, {})
+                    }));
+
+                    // Create series (bars)
+                    var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+                        name: "Word Count",
+                        xAxis: xAxis,
+                        yAxis: yAxis,
+                        valueYField: "word_count_int",
+                        categoryXField: "title",
+                        tooltip: am5.Tooltip.new(root, {
+                            labelText: "{categoryX}: {valueY} words"
+                        })
+                    }));
+
+                    // Set the data for the chart
+                    var chartData = data.map(item => ({
+                        title: item.title,
+                        word_count_int: parseInt(item.word_count.replace(' words', ''))  // Parse word count
+                    }));
+
+                    xAxis.data.setAll(chartData);
+                    series.data.setAll(chartData);
+
+                    // Add animations
+                    series.appear(1000);
+                    chart.appear(1000, 100);
+                });
+            })
+            .catch(error => console.error('Error fetching longest articles:', error));
+    </script>
+</body>
+</html>

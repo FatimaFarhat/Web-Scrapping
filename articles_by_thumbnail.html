@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles by Thumbnail Presence</title>
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/pie.js"></script>
+    <style>
+        #chartdiv {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Articles by Thumbnail Presence</h1>
+    <div id="chartdiv"></div>
+
+    <script>
+    // Fetch total articles count
+    fetch('/api/total_articles_count') // Create this endpoint to return the total count
+        .then(response => response.json())
+        .then(totalData => {
+            const totalArticles = totalData.count; // Assume the response contains { count: totalCount }
+
+            // Fetch data for articles with thumbnails
+            fetch('/api/articles_with_thumbnail')
+                .then(response => response.json())
+                .then(data => {
+                    const thumbnailCount = data.length;
+
+                    const chartData = [
+                        { category: "With Thumbnail", value: thumbnailCount },
+                        { category: "Without Thumbnail", value: totalArticles - thumbnailCount }
+                    ];
+
+                    // Create the pie chart
+                    am5.ready(function() {
+                        var root = am5.Root.new("chartdiv");
+
+                        var chart = root.container.children.push(am5.pie.PieChart.new(root, {}));
+
+                        var series = chart.series.push(am5.pie.PieSeries.new(root, {
+                            valueField: "value",
+                            categoryField: "category"
+                        }));
+
+                        series.data.setAll(chartData);
+                    });
+                })
+                .catch(error => console.error('Error fetching articles with thumbnail:', error));
+        })
+        .catch(error => console.error('Error fetching total articles count:', error));
+</script>
+
+</body>
+</html>

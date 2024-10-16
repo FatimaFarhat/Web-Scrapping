@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles by Date</title>
+
+    <!-- Include amCharts library -->
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+    <!-- Styles for the chart container -->
+    <style>
+        #chartdiv {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Articles by Date</h1>
+    <div id="chartdiv"></div> <!-- Chart will be rendered here -->
+
+    <!-- Script to generate and fetch data for the chart -->
+    <script>
+        am5.ready(function() {
+
+            // Create root element
+            var root = am5.Root.new("chartdiv");
+
+            // Set theme
+            root.setThemes([ am5themes_Animated.new(root) ]);
+
+            // Create chart
+            var chart = root.container.children.push(am5xy.XYChart.new(root, {
+                panX: true,
+                panY: true,
+                wheelX: "panX",
+                wheelY: "zoomX"
+            }));
+
+            // Create axes
+            var xAxis = chart.xAxes.push(am5xy.DateAxis.new(root, {
+                maxDeviation: 0.5,
+                baseInterval: { timeUnit: "day", count: 1 },
+                renderer: am5xy.AxisRendererX.new(root, {})
+            }));
+
+            var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+                maxDeviation: 0.5,
+                renderer: am5xy.AxisRendererY.new(root, {})
+            }));
+
+            // Create series
+            var series = chart.series.push(am5xy.LineSeries.new(root, {
+                xAxis: xAxis,
+                yAxis: yAxis,
+                valueYField: "count",
+                valueXField: "_id",
+                tooltip: am5.Tooltip.new(root, {
+                    labelText: "{valueY}"
+                })
+            }));
+
+            // Fetch data from Flask API
+            fetch('/articles_by_date')
+                .then(response => response.json())
+                .then(data => {
+                    // Convert date strings (_id) to actual Date objects
+                    let processedData = data.map(item => {
+                        return {
+                            _id: new Date(item._id),  // Convert string to Date object
+                            count: item.count
+                        };
+                    });
+
+                    // Set data to the series
+                    series.data.setAll(processedData);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+
+            // Add appearance animations
+            series.appear(1000);
+            chart.appear(1000, 100);
+        });
+    </script>
+
+</body>
+</html>

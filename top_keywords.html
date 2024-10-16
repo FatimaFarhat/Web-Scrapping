@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top Keywords Word Cloud</title>
+    <script src="https://cdn.amcharts.com/libs/amcharts5/index.js"></script>
+    <script src="https://cdn.amcharts.com/libs/amcharts5/wordCloud.js"></script>
+    <script src="https://cdn.amcharts.com/libs/amcharts5/themes/Animated.js"></script>
+</head>
+<body>
+    <h1>Top Keywords Word Cloud</h1>
+    <div id="chartdiv" style="width: 100%; height: 500px;"></div>
+    <script>
+        am5.ready(function() {
+            console.log("amCharts is ready!");
+
+            var root = am5.Root.new("chartdiv");
+
+            root.setThemes([am5themes_Animated.new(root)]);
+
+            var chart = root.container.children.push(
+                am5wc.WordCloud.new(root, {
+                    maxFontSize: am5.percent(15),
+                    minFontSize: am5.percent(5)
+                })
+            );
+
+            var sampleData = [
+                { text: "Sample1", value: 100 },
+                { text: "Sample2", value: 75 },
+                { text: "Sample3", value: 50 }
+            ];
+
+            console.log("Setting data:", sampleData);
+            chart.data.setAll(sampleData);
+        });
+    </script>
+</body>
+</html>
