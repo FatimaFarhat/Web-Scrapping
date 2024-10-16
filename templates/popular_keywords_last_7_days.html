@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Most Popular Keywords in the Last 7 Days</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Most Popular Keywords in the Last 7 Days</h1>
+    <canvas id="keywordsChart" width="400" height="200"></canvas>
+
+    <script>
+        // Fetch data from the API
+        fetch('/api/popular_keywords_last_X_days/7')
+            .then(response => response.json())
+            .then(data => {
+                const labels = data.map(entry => entry._id); // Keyword names
+                const counts = data.map(entry => entry.count); // Keyword counts
+
+                // Create the line chart
+                const ctx = document.getElementById('keywordsChart').getContext('2d');
+                const keywordsChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Keyword Frequency',
+                            data: counts,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching popular keywords:', error));
+    </script>
+</body>
+</html>

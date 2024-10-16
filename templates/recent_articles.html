@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recent Articles</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        img {
+            width: 100px; /* Set a fixed width for thumbnails */
+            height: auto; /* Maintain aspect ratio */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Recent Articles</h1>
+    <table id="articles">
+        <thead>
+            <tr>
+                <th>Thumbnail</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Publication Date</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Articles will be populated here -->
+        </tbody>
+    </table>
+
+    <script>
+        // Fetch recent articles from Flask API
+        fetch('/api/recent_articles')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.getElementById('articles').querySelector('tbody');
+                data.forEach(article => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><img src="${article.thumbnail}" alt="Thumbnail"></td>
+                        <td><a href="${article.url}" target="_blank">${article.title}</a></td>
+                        <td>${article.author}</td>
+                        <td>${new Date(article.parsed_publication_date).toLocaleDateString()}</td>
+                        <td>${article.description}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching recent articles:', error);
+            });
+    </script>
+
+</body>
+</html>

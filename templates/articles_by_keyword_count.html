@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles by Keyword Count</title>
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+</head>
+<body>
+    <h1>Distribution of Articles by Keyword Count</h1>
+    <div id="chartdiv" style="width: 100%; height: 500px;"></div>
+
+    <script>
+        // Fetch the data from the API
+        fetch('/api/articles_by_keyword_count')
+            .then(response => response.json())
+            .then(data => {
+                am5.ready(function() {
+                    // Create the chart instance
+                    var root = am5.Root.new("chartdiv");
+
+                    // Set themes
+                    root.setThemes([am5themes_Animated.new(root)]);
+
+                    // Create XY chart
+                    var chart = root.container.children.push(am5xy.XYChart.new(root, {
+                        panX: true,
+                        panY: true,
+                        wheelX: "panX",
+                        wheelY: "zoomX",
+                        pinchZoomX: true
+                    }));
+
+                    // Create X-axis (number of keywords)
+                    var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+                        categoryField: "keyword_count",
+                        renderer: am5xy.AxisRendererX.new(root, {})
+                    }));
+
+                    // Create Y-axis (number of articles)
+                    var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+                        renderer: am5xy.AxisRendererY.new(root, {})
+                    }));
+
+                    // Create series (bars for histogram)
+                    var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+                        name: "Article Count",
+                        xAxis: xAxis,
+                        yAxis: yAxis,
+                        valueYField: "article_count",
+                        categoryXField: "keyword_count",
+                        tooltip: am5.Tooltip.new(root, {
+                            labelText: "{categoryX} keywords: {valueY} articles"
+                        })
+                    }));
+
+                    // Set the data for the chart
+                    xAxis.data.setAll(data);
+                    series.data.setAll(data);
+
+                    // Add animations
+                    series.appear(1000);
+                    chart.appear(1000, 100);
+                });
+            })
+            .catch(error => console.error('Error fetching articles by keyword count:', error));
+    </script>
+</body>
+</html>

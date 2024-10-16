@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Articles by Category</title>
+
+    <!-- Include amCharts library -->
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+
+    <!-- Styles for the chart container -->
+    <style>
+        #chartdiv {
+            width: 100%;
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Articles by Category</h1>
+    <div id="chartdiv"></div> <!-- Chart will be rendered here -->
+
+    <!-- Script to generate and fetch data for the stacked bar chart -->
+    <script>
+        am5.ready(function() {
+
+            // Create root element
+            var root = am5.Root.new("chartdiv");
+
+            // Set theme
+            root.setThemes([ am5themes_Animated.new(root) ]);
+
+            // Create chart
+            var chart = root.container.children.push(am5xy.XYChart.new(root, {
+                panX: true,
+                panY: true,
+                wheelX: "panX",
+                wheelY: "zoomX"
+            }));
+
+            // Create axes
+            var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+                categoryField: "category",  // Use category as X axis
+                renderer: am5xy.AxisRendererX.new(root, {})
+            }));
+
+            var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+                renderer: am5xy.AxisRendererY.new(root, {})
+            }));
+
+            // Create series for each subcategory
+            var createSeries = function(name, field) {
+                var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+                    xAxis: xAxis,
+                    yAxis: yAxis,
+                    valueYField: field,
+                    categoryXField: "category",
+                    tooltip: am5.Tooltip.new(root, {
+                        labelText: "{category}: {valueY}"
+                    })
+                }));
+                series.name = name;
+                series.columns.template.setAll({
+                    tooltipText: "{name}: {valueY}",
+                    fillOpacity: 0.8
+                });
+                return series;
+            };
+
+            // Fetch data from Flask API
+            fetch('/articles_by_classes')
+                .then(response => response.json())
+                .then(data => {
+                    // Process data into a format suitable for stacked bar chart
+                    const formattedData = data.reduce((acc, item) => {
+                        // Assuming item has fields 'category' and 'count'
+                        acc[item.category] = acc[item.category] || {};
+                        acc[item.category][item.subcategory] = item.count; // Use subcategory field if available
+                        return acc;
+                    }, {});
+
+                    // Convert to an array of objects for amCharts
+                    const chartData = Object.entries(formattedData).map(([category, subcategories]) => ({
+                        category: category,
+                        ...subcategories
+                    }));
+
+                    // Set data to the series
+                    // Create series dynamically for each subcategory
+                    const subcategories = Object.keys(chartData[0]).filter(key => key !== "category");
+                    subcategories.forEach(subcategory => {
+                        createSeries(subcategory, subcategory);
+                    });
+                    chart.data.setAll(chartData);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+
+            // Add appearance animations
+            chart.appear(1000, 100);
+        });
+    </script>
+
+</body>
+</html>

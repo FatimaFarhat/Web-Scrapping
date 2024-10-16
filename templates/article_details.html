@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article Details</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>Article Details</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Field</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Title</td>
+                <td>{{ article.title }}</td>
+            </tr>
+            <tr>
+                <td>Publication Date</td>
+                <td>{{ article.publication_date }}</td>
+            </tr>
+            <tr>
+                <td>Author</td>
+                <td>{{ article.author }}</td>
+            </tr>
+            <tr>
+                <td>Keywords</td>
+                <td>{{ article.keywords }}</td>
+            </tr>
+            <tr>
+                <td>Description</td>
+                <td>{{ article.full_article_text }}</td>
+            </tr>
+            <tr>
+                <td>Video Duration</td>
+                <td>{{ article.video_duration }}</td>
+            </tr>
+            <tr>
+                <td>Last Updated</td>
+                <td>{{ article.last_updated_date }}</td>
+            </tr>
+            <!-- Add more fields as necessary -->
+        </tbody>
+    </table>
+</body>
+</html>
