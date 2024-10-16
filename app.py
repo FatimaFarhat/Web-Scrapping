@@ -1,12 +1,15 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 from flask import Flask, jsonify, request
+from flask_cors import CORS
+
 
 
 
 app = Flask(__name__)  # Initialize a Flask application
+CORS(app)
 
 # Connect to MongoDB
 client = MongoClient("mongodb://localhost:27017/")  # Establish connection with MongoDB server running locally
@@ -20,7 +23,9 @@ def handle_error(message, status_code=400):
     return response
 
 # 1. Top Keywords Endpoint: /top_keywords
-@app.route('/top_keywords', methods=['GET'])
+
+#a. Serve the Data: You also need another route to serve the data used for the chart
+@app.route('/api/top_keywords', methods=['GET'])
 def top_keywords():
     # Pipeline to unwind keywords array, group by keyword, count occurrences, sort by frequency, and limit to top 10
     pipeline = [
@@ -38,12 +43,29 @@ def top_keywords():
         # Ensure Unicode text is properly displayed
         for item in result:
             item["_id"] = item["_id"]  # No transformation needed as jsonify should handle it
-        return jsonify(result)  # Return the result in JSON format
+
     except Exception as e:
         return handle_error(f"Error fetching top keywords: {str(e)}")  # Handle potential errors
+    # Remove the '_id' field from the response
+    for item in result:
+        del item["_id"]
+    return jsonify(result)  # Return the result in JSON format
+
+#b.Define the Route: In your Flask application, you define routes to handle HTTP requests.
+@app.route('/top_keywords', methods=['GET'])
+def top_keywords_page():
+    return render_template('top_keywords.html')
+
 
 # 2. Top Authors Endpoint: /top_authors
-@app.route('/top_authors', methods=['GET'])
+
+#a.Define the Route: In your Flask application, you define routes to handle HTTP requests.
+@app.route('/top_authors')
+def top_authors_page():
+    return render_template('top_authors.html')
+
+# b. Serve the Data: You also need another route to serve the data used for the chart
+@app.route('/api/top_authors', methods=['GET'])
 def top_authors():
     # Pipeline to group articles by author, count the number of articles per author, sort and limit results
     pipeline = [
@@ -59,7 +81,9 @@ def top_authors():
         return handle_error(f"Error fetching top authors: {str(e)}")  # Handle potential errors
 
 # 3. Articles by Date Endpoint: /articles_by_date
-@app.route('/articles_by_date', methods=['GET'])
+
+#a. Serve the Data: You also need another route to serve the data used for the chart
+@app.route('/api/articles_by_date', methods=['GET'])
 def articles_by_date():
     # Pipeline to convert string date field into date object, group by date, and count articles per date
     pipeline = [
@@ -83,27 +107,48 @@ def articles_by_date():
         return jsonify(result)  # Return the result in JSON format
     except Exception as e:
         return handle_error(f"Error fetching articles by date: {str(e)}")  # Handle potential errors
+#b.Define the Route: In your Flask application, you define routes to handle HTTP requests.
+@app.route('/articles_by_date')
+def articles_by_date_page():
+    return render_template('articles_by_date.html')
+
 
 # 4. Articles by Word Count Endpoint: /articles_by_word_count
-@app.route('/articles_by_word_count', methods=['GET'])
+
+#a. Serve the Data: You also need another route to serve the data used for the chart
+
+@app.route('/api/articles_by_word_count', methods=['GET'])
 def articles_by_word_count():
     # Pipeline to clean, group articles by word count, and count occurrences
     pipeline = [
         {
             "$addFields": {
-                # Extract numeric value from word_count string and convert it to an integer
+                # Extract numeric value from word_count string and convert it to an integer, handle errors gracefully
                 "word_count_int": {
-                    "$toInt": {
-                        "$arrayElemAt": [
-                            {"$split": [
-                                {"$trim": {"input": "$word_count"}},  # Remove spaces
-                                " "
-                            ]},
-                            0  # Extract the first element, which is the number
-                        ]
+                    "$cond": {
+                        "if": {"$and": [
+                            {"$ne": ["$word_count", None]},  # Check word_count is not None
+                            {"$ne": [{"$trim": {"input": "$word_count"}}, ""]},  # Check word_count is not empty
+                            {"$regexMatch": {"input": "$word_count", "regex": "^[0-9]+"}}  # Ensure word_count starts with a number
+                        ]},
+                        "then": {
+                            "$toInt": {
+                                "$arrayElemAt": [
+                                    {"$split": [
+                                        {"$trim": {"input": "$word_count"}},  # Remove spaces
+                                        " "
+                                    ]},
+                                    0  # Extract the first element, which is the number
+                                ]
+                            }
+                        },
+                        "else": None  # Handle invalid word counts
                     }
                 }
             }
+        },
+        {
+            "$match": {"word_count_int": {"$ne": None}}  # Filter out documents with invalid word counts
         },
         {
             "$group": {
@@ -129,8 +174,17 @@ def articles_by_word_count():
     except Exception as e:
         return handle_error(f"Error fetching articles by word count: {str(e)}")  # Handle errors
 
+
+#b.Define the Route: In your Flask application, you define routes to handle HTTP requests.
+@app.route('/articles_by_word_count')
+def articles_by_word_count_page():
+    return render_template('articles_by_word_count.html')
+
 # 5. Articles by Language Endpoint: /articles_by_language
-@app.route('/articles_by_language', methods=['GET'])
+
+#a. Serve the Data: You also need another route to serve the data used for the chart
+
+@app.route('/api/articles_by_language', methods=['GET'])
 def articles_by_language():
     # Pipeline to group articles by their language and count occurrences
     pipeline = [
@@ -144,8 +198,16 @@ def articles_by_language():
     except Exception as e:
         return handle_error(f"Error fetching articles by language: {str(e)}")  # Handle potential errors
 
+#b.Define the Route: In your Flask application, you define routes to handle HTTP requests.
+@app.route('/articles_by_language')
+def articles_by_language_page():
+    return render_template('articles_by_language.html')
+
 #6. Articles by Category
-@app.route('/articles_by_classes', methods=['GET'])
+
+#a. Serve the Data: You also need another route to serve the data used for the chart
+
+@app.route('/api/articles_by_classes', methods=['GET'])
 def articles_by_classes():
     # Pipeline to extract and count categories from the 'classes' array field
     pipeline = [
@@ -174,9 +236,13 @@ def articles_by_classes():
     except Exception as e:
         return handle_error(f"Error fetching articles by category: {str(e)}")  # Handle potential errors
 
+@app.route('/articles_by_classes')
+def articles_by_category_page():
+    return render_template('articles_by_category.html')
+
 
 # 7. Recent Articles Endpoint: /recent_articles
-@app.route('/recent_articles', methods=['GET'])
+@app.route('/api/recent_articles', methods=['GET'])
 def recent_articles():
     # Pipeline to sort by the publication date and limit to the 10 most recent articles
     pipeline = [
@@ -219,15 +285,23 @@ def recent_articles():
     except Exception as e:
         return handle_error(f"Error fetching recent articles: {str(e)}")  # Handle potential errors
 
+@app.route('/recent_articles')
+def recent_articles_page():
+    return render_template('recent_articles.html')
 
 #8. Articles by Keyword
 
-@app.route('/articles_by_keyword/<keyword>', methods=['GET'])
+@app.route('/api/articles_by_keyword/<keyword>', methods=['GET'])
 def articles_by_keyword(keyword):
     """
     Endpoint to retrieve a list of articles that contain a specific keyword.
     Returns a JSON array of articles with their titles.
     """
+    # Pagination parameters
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 10))
+    skip = (page - 1) * limit
+
     # Define the query to search for articles containing the specific keyword
     query = {
         "keywords": {
@@ -237,24 +311,37 @@ def articles_by_keyword(keyword):
     }
 
     try:
-        # Fetch the articles that match the keyword query
-        articles = list(collection.find(query, {"title": 1, "_id": 0}))
+        # Fetch the articles that match the keyword query with pagination
+        articles = list(collection.find(query, {"title": 1, "_id": 0}).skip(skip).limit(limit))
 
-        # Count the number of matching articles
-        article_count = len(articles)
+        # Count the total number of matching articles
+        article_count = collection.count_documents(query)
 
         if article_count == 0:
             return jsonify({"message": f"No articles found for keyword: {keyword}"}), 404
 
         return jsonify({
-            "count": article_count,  # Include the count of articles
-            "articles": articles  # Include the list of articles
+            "count": article_count,  # Total number of articles
+            "articles": articles,  # List of articles for this page
+            "page": page,  # Current page
+            "total_pages": (article_count + limit - 1) // limit  # Total pages calculation
         })
     except Exception as e:
-        return handle_error(f"Error fetching articles by keyword: {str(e)}")  # Handle potential errors
+        return handle_error(f"Error fetching articles by keyword: {str(e)}")
+
+
+# Fix to pass the keyword parameter to the template
+@app.route('/articles_by_keyword/<keyword>')
+def articles_by_keyword_page(keyword):
+    """
+    Route to render the HTML page for visualizing articles by keyword.
+    """
+    return render_template('articles_by_keyword.html', keyword=keyword)
+
+
 #9. Articles by Author
 
-@app.route('/articles_by_author/<author_name>', methods=['GET'])
+@app.route('/api/articles_by_author/<author_name>', methods=['GET'])
 def articles_by_author(author_name):
     """
     Endpoint to retrieve all articles written by a specific author.
@@ -285,8 +372,17 @@ def articles_by_author(author_name):
     except Exception as e:
         return handle_error(f"Error fetching articles by author: {str(e)}")  # Handle potential errors
 
+@app.route('/articles_by_author/<author_name>')
+def articles_by_author_page(author_name):
+    """
+    Route to render the HTML page for the bar chart visualization of articles by a specific author.
+    The page will use the JavaScript fetch API to call the Flask API and display the results.
+    """
+    # Render the template with the author name passed to it
+    return render_template('articles_by_author.html', author_name=author_name)
+
 #10. Top Classes
-@app.route('/top_classes', methods=['GET'])
+@app.route('/api/top_classes', methods=['GET'])
 def top_classes():
     # Define the aggregation pipeline to extract and count class values
     pipeline = [
@@ -315,9 +411,17 @@ def top_classes():
     except Exception as e:
         return handle_error(f"Error fetching top classes: {str(e)}")  # Handle potential errors
 
+@app.route('/top_classes')
+def top_classes_page():
+    """
+    Route to render the HTML page for visualizing top classes.
+    """
+    return render_template('top_classes.html')
+
+
 #11. Article Details
 
-@app.route('/article_details/<postid>', methods=['GET'])
+@app.route('/api/article_details/<postid>', methods=['GET'])
 def article_details(postid):
     """
     Endpoint to retrieve detailed information of a specific article based on its postid.
@@ -349,11 +453,27 @@ def article_details(postid):
     except Exception as e:
         return handle_error(f"Error fetching article details: {str(e)}")  # Handle potential errors
 
+@app.route('/article_details/<postid>')
+def article_details_page(postid):
+    """
+    Render the article details page.
+    Fetch article data and pass it to the template for rendering.
+    """
+    try:
+        # Fetch the article details from the MongoDB collection
+        article = collection.find_one({"post_id": postid})
+        if not article:
+            return render_template('error.html', message=f"No article found with postid: {postid}")
+
+        # Render the article details template and pass the article data
+        return render_template('article_details.html', article=article)
+    except Exception as e:
+        return handle_error(f"Error rendering article details: {str(e)}")
 
 
 #12. Articles Containing Videos
 
-@app.route('/articles_with_video', methods=['GET'])
+@app.route('/api/articles_with_video', methods=['GET'])
 def articles_with_video():
     """
     Endpoint to retrieve a list of articles that contain a video.
@@ -378,18 +498,36 @@ def articles_with_video():
                 "title": 1,  # Include the title field in the result
                 "video_duration": 1,  # Include the video_duration field in the result
             }
+        },
+        {
+            "$sort": {"video_duration": -1}  # Optional: Sort articles by video duration (descending)
         }
     ]
 
     try:
-        result = list(collection.aggregate(pipeline))  # Execute the aggregation pipeline
-        return jsonify(result)  # Return the result in JSON format
+        # Fetch the articles that contain videos using the aggregation pipeline
+        result = list(collection.aggregate(pipeline))
+
+        # Calculate the total number of articles with videos
+        total_count = len(result)
+
+        # Return the result with the total count of articles containing videos
+        return jsonify({
+            "total_count": total_count,
+            "articles": result
+        })
     except Exception as e:
         return handle_error(f"Error fetching articles with video: {str(e)}")  # Handle potential errors
 
+@app.route('/articles_with_video')
+def articles_with_video_page():
+    return render_template('articles_with_video.html')
+
+
+
 # 13. Articles by Publication Year
 
-@app.route('/articles_by_year/<int:year>', methods=['GET'])
+@app.route('/api/articles_by_year/<int:year>', methods=['GET'])
 def articles_by_year(year):
     """
     Endpoint to retrieve the number of articles published in a specific year.
@@ -423,8 +561,54 @@ def articles_by_year(year):
     except Exception as e:
         return handle_error(f"Error fetching articles by year: {str(e)}")  # Handle potential errors
 
+
+@app.route('/articles_by_year_page')
+def articles_by_year_page():
+    """
+    Render the page with the chart showing the number of articles published per year.
+    This function will call the articles_by_year(year) for each year in the dataset.
+    """
+    try:
+        # Define the aggregation pipeline to extract distinct years from the articles' publication_date
+        pipeline = [
+            {
+                "$group": {
+                    "_id": {"$year": {"$dateFromString": {"dateString": "$publication_date"}}}  # Extract the year from publication_date
+                }
+            },
+            {
+                "$sort": {"_id": 1}  # Sort years in ascending order
+            }
+        ]
+
+        # Execute the aggregation pipeline to get the list of all distinct years
+        result = list(collection.aggregate(pipeline))
+
+        # Initialize a list to store the year-wise article count data
+        articles_by_year = []
+
+        # Call articles_by_year(year) for each year and collect the results
+        for item in result:
+            year = item["_id"]
+            # Call the articles_by_year(year) function to get the count for each year
+            response = articles_by_year(year)
+            if response.status_code == 200:
+                year_data = response.get_json()  # Extract the JSON data from the response
+                articles_by_year.append({
+                    "year": year_data["year"],
+                    "article_count": year_data["article_count"]
+                })
+
+        # Render the HTML page with the data for all years
+        return render_template('articles_by_year.html', articles_by_year=articles_by_year)
+
+    except Exception as e:
+        return handle_error(f"Error fetching articles by year: {str(e)}")
+
+
+
 #14. Longest Articles
-@app.route('/longest_articles', methods=['GET'])
+@app.route('/api/longest_articles', methods=['GET'])
 def longest_articles():
     """
     Endpoint to retrieve the top 10 articles with the highest word count.
@@ -459,6 +643,14 @@ def longest_articles():
         return jsonify(formatted_result)  # Return the result in JSON format
     except Exception as e:
         return handle_error(f"Error fetching longest articles: {str(e)}")  # Handle potential errors
+
+@app.route('/longest_articles')
+def longest_articles_page():
+    """
+    Route to render the HTML page for visualizing the top 10 longest articles.
+    """
+    return render_template('longest_articles.html')
+
 
 #15. Shortest Articles
 @app.route('/shortest_articles', methods=['GET'])
@@ -497,9 +689,16 @@ def shortest_articles():
     except Exception as e:
         return handle_error(f"Error fetching shortest articles: {str(e)}")  # Handle potential errors
 
+@app.route('/shortest_articles_page')
+def shortest_articles_page():
+    """
+    Route to render the HTML page for visualizing the top 10 shortest articles.
+    """
+    return render_template('shortest_articles.html')
+
 
 #16. Articles by keywords count
-@app.route('/articles_by_keyword_count', methods=['GET'])
+@app.route('/api/articles_by_keyword_count', methods=['GET'])
 def articles_by_keyword_count():
     """
     Endpoint to retrieve the number of articles grouped by the number of keywords they contain.
@@ -542,8 +741,15 @@ def articles_by_keyword_count():
     except Exception as e:
         return handle_error(f"Error fetching articles by keyword count: {str(e)}")  # Handle potential errors
 
+@app.route('/articles_by_keyword_count')
+def articles_by_keyword_count_page():
+    """
+    Route to render the HTML page for visualizing articles by keyword count.
+    """
+    return render_template('articles_by_keyword_count.html')
+
 # 17. Articles with thumbnail
-@app.route('/articles_with_thumbnail', methods=['GET'])
+@app.route('/api/articles_with_thumbnail', methods=['GET'])
 def articles_with_thumbnail():
     """
     Endpoint to retrieve a list of articles that have a thumbnail image.
@@ -574,9 +780,32 @@ def articles_with_thumbnail():
     except Exception as e:
         return handle_error(f"Error fetching articles with thumbnail: {str(e)}")  # Handle potential errors
 
+@app.route('/api/total_articles_count', methods=['GET'])
+def total_articles_count():
+    """
+    Endpoint to retrieve the total number of articles.
+    Returns the total count in JSON format.
+    """
+    try:
+        total_count = collection.count_documents({})  # Count all documents
+        return jsonify({"count": total_count})
+    except Exception as e:
+        return handle_error(f"Error fetching total articles count: {str(e)}")
+
+
+@app.route('/articles_by_thumbnail', methods=['GET'])
+def articles_by_thumbnail_page():
+    """
+    Route to render the HTML page for visualizing articles by thumbnail presence.
+    """
+    return render_template('articles_by_thumbnail.html')
+
+
+
+
 
 #18. Articles Updated After Publication
-@app.route('/articles_updated_after_publication', methods=['GET'])
+@app.route('/api/articles_updated_after_publication', methods=['GET'])
 def articles_updated_after_publication():
     """
     Endpoint to retrieve a list of articles where the last_updated_date is after the publication_date.
@@ -618,8 +847,13 @@ def articles_updated_after_publication():
         # Handle potential errors
         return handle_error(f"Error fetching articles updated after publication: {str(e)}")
 
+@app.route('/articles_updated_after_publication')
+def articles_updated_after_publication_page():
+    return render_template('articles_updated_after_publication.html')
+
+
 #19. Articles by Coverage
-@app.route('/articles_by_coverage/<coverage>', methods=['GET'])
+@app.route('/api/articles_by_coverage/<coverage>', methods=['GET'])
 def articles_by_coverage(coverage):
     """
     Endpoint to retrieve a list of articles under a specific coverage category.
@@ -654,8 +888,16 @@ def articles_by_coverage(coverage):
         # Handle potential errors
         return handle_error(f"Error fetching articles by coverage: {str(e)}")
 
+@app.route('/articles_by_coverage/<coverage>')
+def articles_by_coverage_page(coverage):
+    """
+    Route to render the HTML page for visualizing articles by coverage.
+    """
+    return render_template('articles_by_coverage.html', coverage=coverage)
+
+
 #20. Most Popular Keywords in the Last X Days
-@app.route('/popular_keywords_last_X_days/<int:days>', methods=['GET'])
+@app.route('/api/popular_keywords_last_X_days/<int:days>', methods=['GET'])
 def popular_keywords_last_X_days(days):
     """
     Endpoint to get the most popular keywords in the last X days.
@@ -712,8 +954,16 @@ def popular_keywords_last_X_days(days):
         # Handle potential errors
         return handle_error(f"Error fetching popular keywords: {str(e)}")
 
+@app.route('/popular_keywords_last_7_days')
+def popular_keywords_page():
+    """
+    Route to render the HTML page for displaying popular keywords in the last 7 days.
+    """
+    return render_template('popular_keywords_last_7_days.html')
+
+
 #21. Articles by Published Month
-@app.route('/articles_by_month/<int:year>/<int:month>', methods=['GET'])
+@app.route('/api/articles_by_month/<int:year>/<int:month>', methods=['GET'])
 def articles_by_month(year, month):
     """
     Endpoint to retrieve the number of articles published in a specific month and year.
@@ -750,8 +1000,16 @@ def articles_by_month(year, month):
     except Exception as e:
         return jsonify({"error": f"Error fetching articles by month: {str(e)}"})
 
+@app.route('/articles_by_month')
+def articles_by_month_page():
+    """
+    Route to render the HTML page for visualizing articles by month.
+    """
+    return render_template('articles_by_month.html')
+
+
 #22. Articles by Word Count Range
-@app.route('/articles_by_word_count_range/<int:min_word_count>/<int:max_word_count>', methods=['GET'])
+@app.route('/api/articles_by_word_count_range/<int:min_word_count>/<int:max_word_count>', methods=['GET'])
 def articles_by_word_count_range(min_word_count, max_word_count):
     """
     Endpoint to retrieve articles with a word count within a specified range.
@@ -789,6 +1047,90 @@ def articles_by_word_count_range(min_word_count, max_word_count):
         })
     except Exception as e:
         return jsonify({"error": f"Error fetching articles by word count range: {str(e)}"})
+
+@app.route('/articles_by_word_count_range')
+def articles_by_word_count_range_page():
+    """
+    Route to render the HTML page for visualizing articles by word count range.
+    """
+    return render_template('articles_by_word_count_range.html')
+
+@app.route('/api/longest_article_word_count', methods=['GET'])
+def longest_article_word_count():
+    try:
+        # Find the article with the maximum word count
+        longest_article = collection.find_one({}, sort=[("word_count", -1)], projection={"word_count": 1})
+        return jsonify({"longest_word_count": int(longest_article['word_count'])})
+    except Exception as e:
+        return jsonify({"error": f"Error fetching longest article word count: {str(e)}"})
+
+
+# @app.route('/articles_by_word_count_range')
+# def articles_by_word_count_range_page():
+#     """
+#     Route to render the HTML page for visualizing articles by word count range.
+#     """
+#     return render_template('articles_by_word_count_range.html')
+#
+#
+# @app.route('/api/articles_by_word_count_range', methods=['GET'])
+# def articles_by_word_count_range():
+#     """
+#     Endpoint to retrieve articles with a word count range dynamically
+#     set to the word count of the longest article.
+#     Returns a JSON object with the count of articles for each word count range.
+#     """
+#     try:
+#         # First, get the word count of the longest article
+#         longest_article_pipeline = [
+#             {
+#                 "$addFields": {
+#                     "word_count_int": {"$toInt": "$word_count"}  # Ensure word_count is an integer
+#                 }
+#             },
+#             {
+#                 "$group": {
+#                     "_id": None,
+#                     "max_word_count": {"$max": "$word_count_int"}
+#                 }
+#             }
+#         ]
+#
+#         # Execute the pipeline to get the longest article's word count
+#         result = list(collection.aggregate(longest_article_pipeline))
+#         max_word_count = result[0]['max_word_count'] if result else 0
+#
+#         # Then, fetch the articles within the range from 0 to max_word_count
+#         pipeline = [
+#             {
+#                 "$addFields": {
+#                     "word_count_int": {"$toInt": "$word_count"}  # Ensure word_count is an integer
+#                 }
+#             },
+#             {
+#                 "$match": {
+#                     "word_count_int": {"$lte": max_word_count}  # Use the max word count
+#                 }
+#             },
+#             {
+#                 "$group": {
+#                     "_id": "$word_count_int",  # Group by the word count
+#                     "count": {"$sum": 1}  # Count the number of articles per word count
+#                 }
+#             },
+#             {
+#                 "$sort": {"_id": 1}  # Sort by word count in ascending order
+#             }
+#         ]
+#
+#         # Execute the pipeline to get articles within the word count range
+#         articles_by_word_count = list(collection.aggregate(pipeline))
+#
+#         return jsonify(articles_by_word_count)
+#
+#     except Exception as e:
+#         return jsonify({"error": f"Error fetching articles by word count range: {str(e)}"})
+
 
 #23. Articles with Specific Keyword Count
 
